@@ -490,7 +490,8 @@ This is a portfolio/learning project. Feel free to:
 - [Terraform Documentation](https://www.terraform.io/docs)
 - [Ansible Documentation](https://docs.ansible.com)
 - [AWS Well-Architected Framework](https://aws.amazon.com/architecture/well-architected/)
-- [Chatgpt]
+- [Chatgpt](https://chatgpt.com/)
 - [Claude AI](https://claude.ai)
+
 
 ---
