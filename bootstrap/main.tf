@@ -45,3 +45,4 @@ resource "aws_instance" "web" {
     Name = "Terraform-Web"
   }
 }
+
