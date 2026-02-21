@@ -1,0 +1,11 @@
+# Bootstrap Configuration
+# Copy this file to terraform.tfvars and fill in your values
+
+# S3 bucket name for Terraform state (must be globally unique)
+state_bucket_name = "for example: flask-app-terraform-state-yourname-2025"
+
+# AWS region
+aws_region = "us-east-1"
+
+# DynamoDB table name for state locking (can be anything too but you can use my example)
+dynamodb_table_name = "terraform-state-locks"
