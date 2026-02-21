@@ -1,0 +1,19 @@
+---
+# Flask-App Role - Default Variables
+
+flask_docker_username: ""
+flask_docker_password: ""
+
+flask_image_name: "theyemiii/flask-cicd-app"
+flask_image_tag: "latest"
+
+flask_container_name: "flask-app"
+flask_container_port: 5000
+flask_host_port: 5000
+
+flask_restart_policy: "always"
+
+flask_container_user: "1000:1000"
+
+flask_security_opts:
+  - "no-new-privileges:true"

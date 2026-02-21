@@ -1,0 +1,4 @@
+---
+# Flask app configuration
+flask_docker_username: "{{ vault_docker_username }}"
+flask_docker_password: "{{ vault_docker_password }}"

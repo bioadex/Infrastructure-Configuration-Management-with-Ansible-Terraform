@@ -1,0 +1,13 @@
+# Development Environment Configuration
+# Copy this file to terraform.tfvars and fill in your values
+
+# Your public IP address (for SSH access)
+# Get your IP: curl ifconfig.me
+allowed_ssh_cidr = "YOUR_IP_HERE/32"
+
+# Optional: Override defaults below if and when needed
+
+# aws_region = "us-east-1"
+# instance_type = "t3.micro"
+# vpc_cidr = "10.1.0.0/16"
+# public_subnet_cidr = "10.1.1.0/24"

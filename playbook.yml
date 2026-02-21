@@ -1,0 +1,8 @@
+---
+- name: Deploy Flask Application with Docker
+  hosts: appservers       # change this 
+  gather_facts: yes
+  
+  roles:
+    - docker
+    - flask-app

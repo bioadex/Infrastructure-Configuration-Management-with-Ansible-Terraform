@@ -1,0 +1,76 @@
+---
+# Deploys Flask application in Docker container
+
+- name: Verify Docker credentials are provided
+  assert:
+    that:
+      - flask_docker_username != ""
+      - flask_docker_password != ""
+    fail_msg: "Docker Hub credentials not provided. Set them in group_vars/all/vault.yml"
+  tags:
+    - flask-app
+
+- name: Log in to Docker Hub
+  docker_login:
+    username: "{{ flask_docker_username }}"
+    password: "{{ flask_docker_password }}"
+    state: present
+  become: yes
+  become_user: ec2-user
+  become_flags: '-G docker'
+  tags:
+    - flask-app
+
+- name: Pull Flask app image from Docker Hub
+  docker_image:
+    name: "{{ flask_image_name }}"
+    tag: "{{ flask_image_tag }}"
+    source: pull
+    state: present
+  become: yes
+  become_user: ec2-user
+  become_flags: '-G docker'
+  tags:
+    - flask-app
+
+- name: Stop existing Flask container (if any)
+  docker_container:
+    name: "{{ flask_container_name }}"
+    state: absent
+  become: yes
+  become_user: ec2-user
+  become_flags: '-G docker'
+  ignore_errors: yes
+  tags:
+    - flask-app
+
+- name: Run Flask app container
+  docker_container:
+    name: "{{ flask_container_name }}"
+    image: "{{ flask_image_name }}:{{ flask_image_tag }}"
+    state: started
+    restart_policy: "{{ flask_restart_policy }}"
+    user: "{{ flask_container_user }}"
+    security_opts: "{{ flask_security_opts }}"
+    ports:
+      - "{{ flask_host_port }}:{{ flask_container_port }}"
+  become: yes
+  become_user: ec2-user
+  become_flags: '-G docker'
+  notify: restart flask app
+  tags:
+    - flask-app
+
+- name: Wait for Flask app to start
+  wait_for:
+    port: "{{ flask_host_port }}"
+    delay: 5
+    timeout: 30
+  tags:
+    - flask-app
+
+- name: Display success message
+  debug:
+    msg: "Flask app is running at http://{{ ansible_host }}:{{ flask_host_port }}"
+  tags:
+    - flask-app

@@ -1,0 +1,12 @@
+---
+# Runs only when notified by tasks
+
+- name: restart flask app
+  docker_container:
+    name: "{{ flask_container_name }}"
+    state: started
+    restart: yes
+  become: yes
+  become_user: ec2-user
+  tags:
+    - flask-app

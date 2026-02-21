@@ -1,8 +1,12 @@
-# Infrastructure-Configuration-Management-with-Ansible-Terraform
-Automate infrastructure and deployment of flask application using Terraform (AWS infrastructure) and Ansible (application configuration)
+# Infrastructure and Configuration - Terraform + Ansible
 
-# Architecture 
-```text
+Automated infrastructure and deployment for a Flask application using Terraform (AWS infrastructure) and Ansible (application configuration).
+
+---
+
+## Architecture
+
+```
 Terraform → Creates AWS Infrastructure
     ├── VPC, Subnet, Internet Gateway
     ├── EC2 Instance
@@ -14,409 +18,479 @@ Ansible → Configures & Deploys Application
     ├── Pulls Flask app image
     └── Runs container
 ```
-# Requirement 
-1. Ubuntu (v24.04.4 LTS)
-2. Terraform (v1.14+)
-3. Ansible (v2.17+)
-4. AWS Account with credentials configured
-5. Docker Hub account (for pulling Flask image)
-6. Docker (v29.2+)
 
-# Installation on Ubuntu/WSL 
+---
 
-# Terraform 
-    sudo apt-get update
-    sudo apt-get install -y gnupg software-properties-common
-    wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg
-    echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
-    sudo apt-get update && sudo apt-get install terraform
-    
+## Prerequisites
+
+- **Ubuntu/WSL
+- **Terraform** (v1.0+)
+- **Ansible** (v2.9+)
+- **AWS Account** with credentials configured
+- **Docker Hub account** (for pulling Flask image)
+- **Docker
+
+**Install on Ubuntu/WSL:**
+```bash
+# Terraform
+sudo apt-get update
+sudo apt-get install -y gnupg software-properties-common
+wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+sudo apt-get update && sudo apt-get install terraform
+
 # Ansible
-    sudo apt-get install -y ansible 
+sudo apt-get install -y ansible
+```
 
-# Quick Startup 
-# 1.First Time Only (Bootstrap)
+---
+
+## Quick Start
+
+### 1. Bootstrap (First Time Only)
+
+Create remote state backend:
+
+```bash
 # Create bootstrap/terraform.tfvars
-     cat > bootstrap/terraform.tfvars <<EOF
-     state_bucket_name = "e.g: flask-app-state-aka-tech-it-2025"
-     aws_region        = "us-east-1"
-     EOF
+cat > bootstrap/terraform.tfvars <<EOF
+state_bucket_name = "e.g: flask-app-state-yourname-2025"
+aws_region        = "us-east-1"
+EOF
 
-     # Deploy
-     cd bootstrap
-     terraform init
-     terraform apply
-     cd ..
-     
-# 2. Configure Secrets
-  this will make ansible uses ansible vault where ansible login credentials are store to encrypt sensitive data. Create group_vars structure:
+# Deploy
+cd bootstrap
+terraform init
+terraform apply
+cd ..
+```
 
-     mkdir -p group_vars/all
-     
-  # Create public variables file:
-     
-     cat > group_vars/all/vars.yml <<EOF
-     ---
-     # Public variables - references encrypted vault variables
-     flask_docker_username: "{{ vault_docker_username }}"
-     flask_docker_password: "{{ vault_docker_password }}"
-     EOF
+## 2. Configure Secrets
+Ansible uses Ansible Vault to encrypt sensitive data like Docker Hub credentials.
+Create group_vars structure:
 
-  # Create encrypted vault file:
+```bash
+mkdir -p group_vars/all
+```
 
-     # Create encrypted vault for Docker credentials
-     ansible-vault create group_vars/all/vault.yml
+Create public variables file:
 
-     # Add your credentials when prompted:
-     ---
-     vault_docker_username: "your-dockerhub-email@example.com"
-     vault_docker_password: "your-dockerhub-password"
+```bash
+cat > group_vars/all/vars.yml <<EOF
+---
+# Public variables - references encrypted vault variables
+flask_docker_username: "{{ vault_docker_username }}"
+flask_docker_password: "{{ vault_docker_password }}"
+EOF
+```
 
-  # Save vault password
+Create encrypted vault file:
+```bash
+# Create encrypted vault for Docker credentials
+ansible-vault create group_vars/all/vault.yml
 
-     echo "your-vault-password" > .vault_pass
-     chmod 600 .vault_pass
-  Note: The .vault_pass file is in .gitignore. This allows Ansible to decrypt the vault automatically without prompting for a password each time ansible user when to access
+# Add your credentials when prompted:
+---
+vault_docker_username: "your-dockerhub-email@example.com"
+vault_docker_password: "your-dockerhub-password"
+```
 
-# 3. Deploy Dev Environment 
+Save vault password (optional but convenient):
+```bash
+echo "your-vault-password" > .vault_pass
+chmod 600 .vault_pass
+```
 
-     # Create dev/terraform.tfvars
-     cat > environments/dev/terraform.tfvars <<EOF
-     allowed_ssh_cidr = "YOUR_IP/32"  # Get your IP: curl ifconfig.me
-     EOF
+Note: The .vault_pass file is in .gitignore. This allows Ansible to decrypt the vault automatically without prompting for a password each time.
 
-     # Deploy infrastructure
-     cd environments/dev
-     terraform init
-     terraform apply
-     cd ../..
+### 3. Deploy Dev Environment
 
-    # Deploy application
-    ansible-playbook -i environments/dev/inventory.ini playbook.yml
+```bash
+# Create dev/terraform.tfvars
+cat > environments/dev/terraform.tfvars <<EOF
+allowed_ssh_cidr = "YOUR_IP/32"  # Get your IP: curl ifconfig.me
+EOF
 
-    # Access your app
-    # URL will be shown in Terraform outputs
+# Deploy infrastructure
+cd environments/dev
+terraform init
+terraform apply
+cd ../..
 
- # 4. Common Commands 
+# Deploy application
+ansible-playbook -i environments/dev/inventory.ini playbook.yml
 
- Infrastructure 
- 
-    cd environments/dev
-    terraform plan
+# Access your app
+# URL will be shown in Terraform outputs
+```
 
-    # Apply changes
-    terraform apply
+---
 
-    # Destroy environment
-    terraform destroy
+## Common Commands
 
- Application Deployment 
+### Infrastructure
 
-    # Deploy app
-    ansible-playbook -i environments/dev/inventory.ini playbook.yml
+```bash
+# Plan changes
+cd environments/dev
+terraform plan
 
-    # With vault password prompt
-    ansible-playbook -i environments/dev/inventory.ini playbook.yml --ask-vault-pass
+# Apply changes
+terraform apply
 
-    # Test connection
-    ansible appservers -i environments/dev/inventory.ini -m ping
+# Destroy environment
+terraform destroy
+```
 
- Ansible Vault
+### Application Deployment
 
-    # Edit secrets
-    ansible-vault edit group_vars/all/vault.yml
+```bash
+# Deploy app
+ansible-playbook -i environments/dev/inventory.ini playbook.yml
 
-    # View secrets
-    ansible-vault view group_vars/all/vault.yml
+# With vault password prompt
+ansible-playbook -i environments/dev/inventory.ini playbook.yml --ask-vault-pass
 
-    # Change vault password
-    ansible-vault rekey group_vars/all/vault.yml
+# Test connection
+ansible appservers -i environments/dev/inventory.ini -m ping
+```
 
-# Project Structure
-    ├── bootstrap/                          # Remote state backend setup
-    │   ├── main.tf                         # S3 bucket + DynamoDB configuration
-    │   ├── variables.tf                    # Input variables for bootstrap
-    │   ├── outputs.tf                      # Outputs (bucket name, table name)
-    │   ├── terraform.tfvars.example        # Example configuration
-    │   └── terraform.tfvars                # Your config (create this, gitignored)
-    
-    ├── environments/
-    │   ├── dev/                            # Development environment
-    │   │   ├── main.tf                     # Calls network, security, compute modules
-    │   │   ├── variables.tf                # Dev environment variables
-    │   │   ├── outputs.tf                  # Outputs (IP, URL, SSH command)
-    │   │   ├── terraform.tfvars.example    # Example dev configuration
-    │   │   ├── terraform.tfvars            # Your dev config (create this, gitignored)
-    │   │   ├── inventory.ini               # Generated by Terraform
-    │   │   └── ansible-key-dev.pem         # Generated by Terraform (gitignored)
-    │   │
-    │   └── prod/                           # Production environment
-    │       ├── main.tf                     # Same structure as dev
-    │       ├── variables.tf                # Prod environment variables
-    │       ├── outputs.tf                  # Prod outputs
-    │       ├── terraform.tfvars.example    # Example prod configuration
-    │       ├── terraform.tfvars            # Your prod config (create this, gitignored)
-    │       ├── inventory.ini               # Generated by Terraform
-    │       └── ansible-key-prod.pem        # Generated by Terraform (gitignored)
-    │
-    ├── modules/                            # Reusable Terraform modules
-    │   ├── network/
-    │   │   ├── main.tf                     # VPC, subnets, IGW, routing
-    │   │   ├── variables.tf                # Network module inputs
-    │   │   └── outputs.tf                  # VPC ID, subnet IDs
-    │   │
-    │   ├── security/
-    │   │   ├── main.tf                     # Security groups, SSH keys, IAM roles
-    │   │   ├── variables.tf                # Security module inputs
-    │   │   └── outputs.tf                  # SG IDs, key names, IAM role ARNs
-    │   │
-    │   └── compute/
-    │       ├── main.tf                     # EC2 instance configuration
-    │       ├── variables.tf                # Compute module inputs
-    │       └── outputs.tf                  # Instance ID, public/private IPs
-    │
-    ├── roles/                              # Ansible roles
-    │   ├── docker/
-    │   │   ├── tasks/
-    │   │   │   └── main.yml                # Docker installation & configuration
-    │   │   ├── handlers/
-    │   │   │   └── main.yml                # Docker service restart handler
-    │   │   └── defaults/
-    │   │       └── main.yml                # Default variables for docker role
-    │   │
-    │   └── flask-app/
-    │       ├── tasks/
-    │       │   └── main.yml                # Flask app deployment tasks
-    │       ├── handlers/
-    │       │   └── main.yml                # Container restart handler
-    │       ├── defaults/
-    │       │   └── main.yml                # Default variables for flask-app role
-    │       └── meta/
-    │           └── main.yml                # Role dependencies (depends on docker)
-    │
-    ├── group_vars/                         # Ansible group variables
-    │   └── all/                            # Variables for all hosts
-    │       ├── vars.yml                    # Public variables (safe to commit)
-    │       └── vault.yml                   # Encrypted secrets (create this, gitignored)
-    │
-    ├── inventory.tpl                       # Inventory template for Terraform
-    ├── playbook.yml                        # Main Ansible playbook
-    ├── ansible.cfg                         # Ansible configuration
-    ├── .gitignore                          # Git ignore patterns
-    └── README.md                           # This file
+### Ansible Vault
 
- # Key file purposes 
+```bash
+# Edit secrets
+ansible-vault edit group_vars/all/vault.yml
 
- Terraform files: 
-  1. main.tf - Resource definitions
-  2. variables.tf - Input variable declarations
-  3. outputs.tf - Output value definitions
-  4. terraform.tfvars - Actual values (environment-specific, gitignored)
-  5. terraform.tfvars.example - Template showing what to configure
+# View secrets
+ansible-vault view group_vars/all/vault.yml
 
- Ansible files: 
-  1. playbook.yml - Orchestrates role execution
-  2. ansible.cfg - Project-wide Ansible settings
-  3. inventory.tpl - Template for generating inventory files
-  4. group_vars/all/vars.yml - Non-sensitive shared variables
-  5. group_vars/all/vault.yml - Encrypted sensitive data (Docker credentials)
+# Change vault password
+ansible-vault rekey group_vars/all/vault.yml
+```
 
-# Security features 
-     ✅ Encrypted secrets with Ansible Vault
+---
 
-     ✅ SSH keys auto-generated and secured (0600 permissions)
+## Project Structure
+```
+.
+├── bootstrap/                          # Remote state backend setup
+│   ├── main.tf                         # S3 bucket + DynamoDB configuration
+│   ├── variables.tf                    # Input variables for bootstrap
+│   ├── outputs.tf                      # Outputs (bucket name, table name)
+│   ├── terraform.tfvars.example        # Example configuration
+│   └── terraform.tfvars                # Your config (create this, gitignored)
+│
+├── environments/
+│   ├── dev/                            # Development environment
+│   │   ├── main.tf                     # Calls network, security, compute modules
+│   │   ├── variables.tf                # Dev environment variables
+│   │   ├── outputs.tf                  # Outputs (IP, URL, SSH command)
+│   │   ├── terraform.tfvars.example    # Example dev configuration
+│   │   ├── terraform.tfvars            # Your dev config (create this, gitignored)
+│   │   ├── inventory.ini               # Generated by Terraform
+│   │   └── ansible-key-dev.pem         # Generated by Terraform (gitignored)
+│   │
+│   └── prod/                           # Production environment
+│       ├── main.tf                     # Same structure as dev
+│       ├── variables.tf                # Prod environment variables
+│       ├── outputs.tf                  # Prod outputs
+│       ├── terraform.tfvars.example    # Example prod configuration
+│       ├── terraform.tfvars            # Your prod config (create this, gitignored)
+│       ├── inventory.ini               # Generated by Terraform
+│       └── ansible-key-prod.pem        # Generated by Terraform (gitignored)
+│
+├── modules/                            # Reusable Terraform modules
+│   ├── network/
+│   │   ├── main.tf                     # VPC, subnets, IGW, routing
+│   │   ├── variables.tf                # Network module inputs
+│   │   └── outputs.tf                  # VPC ID, subnet IDs
+│   │
+│   ├── security/
+│   │   ├── main.tf                     # Security groups, SSH keys, IAM roles
+│   │   ├── variables.tf                # Security module inputs
+│   │   └── outputs.tf                  # SG IDs, key names, IAM role ARNs
+│   │
+│   └── compute/
+│       ├── main.tf                     # EC2 instance configuration
+│       ├── variables.tf                # Compute module inputs
+│       └── outputs.tf                  # Instance ID, public/private IPs
+│
+├── roles/                              # Ansible roles
+│   ├── docker/
+│   │   ├── tasks/
+│   │   │   └── main.yml                # Docker installation & configuration
+│   │   ├── handlers/
+│   │   │   └── main.yml                # Docker service restart handler
+│   │   └── defaults/
+│   │       └── main.yml                # Default variables for docker role
+│   │
+│   └── flask-app/
+│       ├── tasks/
+│       │   └── main.yml                # Flask app deployment tasks
+│       ├── handlers/
+│       │   └── main.yml                # Container restart handler
+│       ├── defaults/
+│       │   └── main.yml                # Default variables for flask-app role
+│       └── meta/
+│           └── main.yml                # Role dependencies (depends on docker)
+│
+├── group_vars/                         # Ansible group variables
+│   └── all/                            # Variables for all hosts
+│       ├── vars.yml                    # Public variables (safe to commit)
+│       └── vault.yml                   # Encrypted secrets (create this, gitignored)
+│
+├── inventory.tpl                       # Inventory template for Terraform
+├── playbook.yml                        # Main Ansible playbook
+├── ansible.cfg                         # Ansible configuration
+├── .gitignore                          # Git ignore patterns
+└── README.md                           # This file
+```
 
-     ✅ IAM roles for EC2 instances (least privilege principle)
+### Key File Purposes
+Terraform Files:
 
-     ✅ Docker daemon hardening (no-new-privileges, log rotation)
+- main.tf - Resource definitions
+- variables.tf - Input variable declarations
+- outputs.tf - Output value definitions
+- terraform.tfvars - Actual values (environment-specific, gitignored)
+- terraform.tfvars.example - Template showing what to configure
 
-     ✅ Containers run as non-root user
+Ansible Files:
 
-     ✅ Security groups restrict network access
+- playbook.yml - Orchestrates role execution
+- ansible.cfg - Project-wide Ansible settings
+- inventory.tpl - Template for generating inventory files
+- group_vars/all/vars.yml - Non-sensitive shared variables
+- group_vars/all/vault.yml - Encrypted sensitive data (Docker credentials)
 
-     ✅ Remote state with locking (prevents conflicts)
-    
+---
+
+## Security Features
+
+- ✅ Encrypted secrets with Ansible Vault
+- ✅ SSH keys auto-generated and secured (0600 permissions)
+- ✅ IAM roles for EC2 instances (least privilege principle)
+- ✅ Docker daemon hardening (no-new-privileges, log rotation)
+- ✅ Containers run as non-root user
+- ✅ Security groups restrict network access
+- ✅ Remote state with locking (prevents conflicts)
+
+---
+
 ## IAM Role Architecture
+The project creates IAM roles for EC2 instances following the principle of least privilege:
 
-The Project create IAM roles for EC2 instances following the principle of least privilege:
-
-    EC2 Instance
+```
+EC2 Instance
     ↓
-    Attached: IAM Instance Profile
+Attached: IAM Instance Profile
     ↓
-    Contains: IAM Role
+Contains: IAM Role
     ↓
-    Policies: (configurable via iam_policy_arns variable)
+Policies: (configurable via iam_policy_arns variable)
+```
+How it works:
 
-How it Works: 
+```
+hcl
+# modules/security/main.tf creates:
+1. IAM Role (allows EC2 to assume it)
+2. IAM Instance Profile (attaches role to EC2)
+3. Policy attachments (optional, via variable)
 
-     hcl
-     # modules/security/main.tf creates:
-     1. IAM Role (allows EC2 to assume it)
-     2. IAM Instance Profile (attaches role to EC2)
-     3. Policy attachments (optional, via variable)
-
-     # Example: Grant S3 access
-     # environments/dev/terraform.tfvars
-     iam_policy_arns = [
-     "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
-    ]
-
+# Example: Grant S3 access
+# environments/dev/terraform.tfvars
+iam_policy_arns = [
+  "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
+]
+```
 Default setup:
 
-No policies attached by default (principle of least privilege) EC2 can assume the role but has no permissions Add only what you need via iam_policy_arns variable
+No policies attached by default (principle of least privilege)
+EC2 can assume the role but has no permissions
+Add only what you need via iam_policy_arns variable
 
-Common use cases: 
+### Common use cases:
 
-     hcl
-     # Read-only S3 access
-     iam_policy_arns = [
-     "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
-    ]
+```
+hcl
+# Read-only S3 access
+iam_policy_arns = [
+  "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
+]
 
-    # CloudWatch logging
-    iam_policy_arns = [
-    "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
-    ]
+# CloudWatch logging
+iam_policy_arns = [
+  "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+]
 
-    # Systems Manager (for AWS Session Manager)
-    iam_policy_arns = [
-    "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-    ]
+# Systems Manager (for AWS Session Manager)
+iam_policy_arns = [
+  "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+]
+```
 
-Troubleshooting 
+---
 
-WSL-Specific Issues
+## Troubleshooting
 
-Problem: "Permissions 0777 for key file are too open"
-Cause: WSL on Windows mounts (/mnt/c/...) don't handle Unix permissions correctly.
-Solution: Move project to WSL native filesystem:
+### WSL-Specific Issues
 
-    # Move from Windows mount to WSL home
-    mv /mnt/c/Users/YourName/project ~/project
-    cd ~/project
+**Problem: "Permissions 0777 for key file are too open"**
 
-    # Regenerate keys
-    cd environments/dev
-    rm ansible-key-dev.pem
-    terraform apply
+**Cause:** WSL on Windows mounts (`/mnt/c/...`) don't handle Unix permissions correctly.
 
-Problem: "world-readable" Ansible warnings
-Solution: Ensure project is in WSL native filesystem (/home/user/...), not Windows mount (/mnt/c/...).
+**Solution:** Move project to WSL native filesystem:
+```bash
+# Move from Windows mount to WSL home
+mv /mnt/c/Users/YourName/project ~/project
+cd ~/project
 
-Problem: Docker permission denied in Ansible
-Cause: Task runs as root, but root isn't in docker group.
-Solution: Already handled in roles! Check roles/flask-app/tasks/main.yml:
+# Regenerate keys
+cd environments/dev
+rm ansible-key-dev.pem
+terraform apply
+```
 
-    - name: Run container
-    docker_container: ...
-    become: yes
-    become_user: ec2-user  # ←  add ec2-user to docker group 
+---
 
-    
-General issues that may arises 
+**Problem: "world-readable" Ansible warnings**
 
-Problem: Terraform state locked 
+**Solution:** Ensure project is in WSL native filesystem (`/home/user/...`), not Windows mount (`/mnt/c/...`).
 
-    # Force unlock (use with caution!)
-    terraform force-unlock LOCK_ID
+---
 
-Problem: SSH connection refused 
+**Problem: Docker permission denied in Ansible**
 
-    # Wait for instance to boot (takes ~30 seconds)
-    sleep 30
+**Cause:** Task runs as root, but root isn't in docker group.
 
-    # Test connection
-    ansible appservers -i environments/dev/inventory.ini -m ping
+**Solution:** Already handled in roles! Check `roles/flask-app/tasks/main.yml`:
+```yaml
+- name: Run container
+  docker_container: ...
+  become: yes
+  become_user: ec2-user  # ← ec2-user is in docker group
+```
 
-Problem: Docker Hub rate limit
+---
 
-Solution: Login with your Docker Hub account (already configured in Ansible vault).
+### General Issues
 
-# Deployment to Production 
+**Problem: Terraform state locked**
 
-    # 1. Create prod config
-    cat > environments/prod/terraform.tfvars <<EOF
-    allowed_ssh_cidr = "YOUR_IP/32"
-    EOF
+```bash
+# Force unlock (use with caution!)
+terraform force-unlock LOCK_ID
+```
 
-    # 2. Deploy infrastructure
-    cd environments/prod
-    terraform init
-    terraform apply
-    cd ../..
+---
 
-    # 3. Deploy application
-    ansible-playbook -i environments/prod/inventory.ini playbook.yml
+**Problem: SSH connection refused**
 
-    # 4. Verify
-    curl http://$(cd environments/prod && terraform output -raw server_ip):5000
+```bash
+# Wait for instance to boot (takes ~30 seconds)
+sleep 30
 
-    # 5. Visualization 
+# Test connection
+ansible appservers -i environments/dev/inventory.ini -m ping
+```
 
-# Cleanup 
+---
 
-    # Destroy dev environment
-    cd environments/dev
-    terraform destroy
+**Problem: Docker Hub rate limit**
 
-    # Destroy prod environment
-    cd environments/prod
-    terraform destroy
+**Solution:** Login with your Docker Hub account (already configured in Ansible vault).
 
-    # Destroy bootstrap (only after destroying all environments!)
-    cd ../../bootstrap
-    terraform destroy
+---
 
+## Deploying to Production
 
-What this Project Demonstartes
+```bash
+# 1. Create prod config
+cat > environments/prod/terraform.tfvars <<EOF
+allowed_ssh_cidr = "YOUR_IP/32"
+EOF
 
-Infrastructure as Code (Terraform)
-  1. Modular infrastructure design
-  2. Remote state management with locking
-  3. Environment separation (dev/prod)
-  4. AWS best practices (VPC, security groups, IAM)
+# 2. Deploy infrastructure
+cd environments/prod
+terraform init
+terraform apply
+cd ../..
 
-Configuration Management (Ansible)
-  1. Role-based organization
-  2. Idempotent tasks
-  3. Secrets management with Vault
-  4. Security hardening
+# 3. Deploy application
+ansible-playbook -i environments/prod/inventory.ini playbook.yml
 
-Montoring (cloud server)
-  1. Grafana
-  2. Prometheus
-  3. Node Exporter 
+# 4. Verify
+curl http://$(cd environments/prod && terraform output -raw server_ip):5000
+```
 
-DevOps Practices
-  1. Automated deployment workflow
-  2. Infrastructure + application deployment
-  3. Environment parity
-  4. Security-first approach
+---
 
-Contributing 
+## Cleanup
 
-This is a portfolio/work/learning project. feel free to: 
-  1. Extend with additional enviroments (stagging, QA)
-  2. Implement CI/CD pipelines
-  3. Kubernetes
-  4. Add load balancers for Production
+```bash
+# Destroy dev environment
+cd environments/dev
+terraform destroy
 
-Notes
-  1. Cost: depending on your aws infrastructure
-  2. AWS Region: Defaults to us-east-1, this can be change in terraform.tfvars
-  3. Flask App: Uses Docker image aka-tech-it/flask-cicd-app:latest - replace with your desirable image 
+# Destroy prod environment
+cd environments/prod
+terraform destroy
 
-Reference Resources 
-  1. Terraform Documentation
-  2. Ansible Documentation
-  3. AWS Well Architected framework
-  4. Chatgpt
-  5. Claude AI 
+# Destroy bootstrap (only after destroying all environments!)
+cd ../../bootstrap
+terraform destroy
+```
 
-    
+---
 
+## What This Project Demonstrates
 
- 
+### Infrastructure as Code (Terraform)
+- Modular infrastructure design
+- Remote state management with locking
+- Environment separation (dev/prod)
+- AWS best practices (VPC, security groups, IAM)
 
-    
+### Configuration Management (Ansible)
+- Role-based organization
+- Idempotent tasks
+- Secrets management with Vault
+- Security hardening
+
+### DevOps Practices
+- Automated deployment workflow
+- Infrastructure + application deployment
+- Environment parity
+- Security-first approach
+
+---
+
+## Contributing
+
+This is a portfolio/learning project. Feel free to:
+- Extend with additional environments (staging, QA)
+- Add monitoring (Grafana, Prometheus)
+- Implement CI/CD pipelines
+- Kubernetes 
+- Add load balancers for prod
+
+---
+
+## Notes
+
+- **Cost:** Running this infrastructure depending on your environment (t3.micro EC2 instance)
+- **AWS Region:** Defaults to `us-east-1`, can be changed in `terraform.tfvars`
+- **Flask App:** Uses Docker image `aka/flask-cicd-app:latest` - please replace with your own
+
+---
+
+## Learning Resources
+
+- [Terraform Documentation](https://www.terraform.io/docs)
+- [Ansible Documentation](https://docs.ansible.com)
+- [AWS Well-Architected Framework](https://aws.amazon.com/architecture/well-architected/)
+- [Chatgpt]
+- [Claude AI](https://claude.ai)
+
+---
