@@ -23,12 +23,12 @@ Ansible → Configures & Deploys Application
 
 ## Prerequisites
 
-- **Ubuntu/WSL
+- **Ubuntu/WSL**
 - **Terraform** (v1.0+)
 - **Ansible** (v2.9+)
 - **AWS Account** with credentials configured
 - **Docker Hub account** (for pulling Flask image)
-- **Docker
+- **Docker**
 
 **Install on Ubuntu/WSL:**
 ```bash
@@ -495,3 +495,4 @@ This is a portfolio/learning project. Feel free to:
 
 
 ---
+
